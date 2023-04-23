@@ -1,0 +1,45 @@
+/* 앞면(front) 템플릿 */
+
+/* 전체 카드 컨테이너 스타일링 */
+.card-front {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 단어 스타일링 */
+.card-word {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* 그림 스타일링 */
+.card-image {
+    margin-bottom: 20px;
+    max-width: 100%;
+}
+
+/* 발음 사운드 스타일링 */
+.card-audio {
+    margin-bottom: 20px;
+}
+
+/* 뒷면(back) 템플릿 */
+
+/* 전체 카드 컨테이너 스타일링 */
+.card-back {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 뜻 스타일링 */
+.card-meaning {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin: 0 20px;
+}
