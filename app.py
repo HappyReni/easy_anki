@@ -5,6 +5,8 @@ import chromedriver_autoinstaller
 import genanki
 import csv
 import random
+import requests
+import os
 
 class Anki():
     def __init__(self, csv_path, model_name):
@@ -65,6 +67,16 @@ class Anki():
         self.driver.quit()
 
     def _read_csv(self,csv_path):
+        '''
+        Read a CSV file and return its rows as a list of dictionaries
+
+        Args:
+        csv_path (str): Path to the CSV file
+
+        Returns:
+        list: List of dictionaries representing each row in the CSV file
+
+        '''
         with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.DictReader(csvfile)
             rows = list(reader)
@@ -114,12 +126,21 @@ class Anki():
         # Wait for the audio element to load
         self.driver.implicitly_wait(10)
         # Find the audio element on the page
-        audio_element = self.driver.find_element(By.CSS_SELECTOR,'#searchPage_entry > div > div:nth-child(1) > div > span.unit_listen.my_old_pron_area > button')
-        # Get the URL of the audio file
-        audio_url = audio_element.get_attribute('purl')
 
+        audio_path = f'audios/{word}.mp3'
+        
+        if not os.path.isfile(audio_path):
+            audio_element = self.driver.find_element(By.CSS_SELECTOR,'#searchPage_entry > div > div:nth-child(1) > div > span.unit_listen.my_old_pron_area > button')
+            # Get the URL of the audio file
+            audio_url = audio_element.get_attribute('purl')
+
+            response = requests.get(audio_url)
+
+            with open(audio_path,'wb') as f:
+                f.write(response.content)
+            
         definition = self.get_definition(word_url)
-        return audio_url, definition
+        return os.path.abspath(audio_path), definition
 
     def get_image_url(self, word):
         url = f"https://pixabay.com/es/images/search/{word}/"

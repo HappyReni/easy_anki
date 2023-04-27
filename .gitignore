@@ -167,3 +167,6 @@ anki/
 
 #anki deck
 *.apkg
+
+#media
+*.mp3
