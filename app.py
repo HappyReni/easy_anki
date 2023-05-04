@@ -13,11 +13,7 @@ class Anki():
         if not os.path.isdir('audio'):
             os.mkdir('audio')
         
-        self.note_data = {  'word' : [],
-                            'definition' : [],
-                            'image_src' : [],
-                            'audio_src' : [],   }
-        
+        self.note_data = {}
         self.media_files = list()
 
         self.driver= self._get_driver()
@@ -105,34 +101,47 @@ class Anki():
             word = row['word']
             definition_org = row['definition']
 
-            self.note_data['word'].append(word)
+            data = {   'word' : '',
+                        'definition' : '',
+                        'image_src' : '',
+                        'audio_src' : '',   }
+            
+            self.note_data[word] = data
+            self.note_data[word]['word'] = word
+
+            naver_url = ""
             try:
-                self._get_audio(word)
+                naver_url = self._get_audio(word)
             except Exception as e:
                 print(e)
-                self.note_data['audio_src'].append('')
-                self.note_data['definition'].append(definition_org)
+                self.note_data[word]['audio_src'] = ''
+            
+            try:
+                self._get_definition(word,naver_url)
+            except Exception as e:
+                print(e)
+                self.note_data[word]['definition'] = definition_org
 
             try:
                 self._get_image_url(word)
             except Exception as e:
                 print(e)
-                self.note_data['image_src'].append('')
+                self.note_data[word]['image_src'] = ''
 
             # Add the data to the Anki deck
-            self._add_note_to_deck(self.note_data, idx)
- 
+            self._add_note_to_deck(self.note_data[word])
+
     def write_to_apkg(self, file_name = "anki_deck"):
         # Export the deck to an .apkg file
         package = genanki.Package(self.deck)
         self._add_media_files(package)
         package.write_to_file(f'{file_name}.apkg')
 
-    def _add_note_to_deck(self, note_data, idx):
-        word = note_data['word'][idx]
-        definition = note_data['definition'][idx]
-        image_url = note_data['image_src'][idx]
-        audio_url = note_data['audio_src'][idx]
+    def _add_note_to_deck(self, data):
+        word = data['word']
+        definition = data['definition']
+        image_url = data['image_src']
+        audio_url = data['audio_src']
         print(word,definition,image_url,audio_url)
         # Build the note
         note = genanki.Note(
@@ -144,6 +153,7 @@ class Anki():
         self.deck.add_note(note)
     
     def _add_media_files(self,package):
+        print(self.media_files)
         package.media_files = self.media_files
 
     def _get_audio(self, word):
@@ -160,16 +170,20 @@ class Anki():
         if not os.path.isfile(audio_path):
             audio_element = self.driver.find_element(By.CSS_SELECTOR,'#searchPage_entry > div > div:nth-child(1) > div > span.unit_listen.my_old_pron_area > button')
             # Get the URL of the audio file
-            audio_url = audio_element.get_attribute('purl')
-
+            if audio_element :
+                audio_url = audio_element.get_attribute('purl')
+            else:
+                audio_url = ""
+            
             response = requests.get(audio_url)
 
             with open(audio_path,'wb') as f:
                 f.write(response.content)
         
         self.media_files.append(audio_path)
-        self.note_data['audio_src'].append(file)
-        self._get_definition(word_url)
+        self.note_data[word]['audio_src'] = file
+
+        return word_url
 
     def _get_image_url(self, word):
         url = f"https://pixabay.com/es/images/search/{word}/"
@@ -177,19 +191,28 @@ class Anki():
         self.driver.get(url)
         self.driver.implicitly_wait(10)
         img_element = self.driver.find_element(By.CSS_SELECTOR,'#app > div:nth-child(1) > div > div.container--wYO8e > div.results--mB75j > div > div > div:nth-child(1) > div:nth-child(1) > div > a > img')
-        image_url = img_element.get_attribute('src')
-        self.note_data['image_src'].append(image_url)
+        if img_element :
+            image_url = img_element.get_attribute('src')
+        else:
+            image_url = ""
+        
+        self.note_data[word]['image_src'] = image_url
     
-    def _get_definition(self,url):
-        word = self.driver.find_element(By.CSS_SELECTOR,'#searchPage_entry > div > div:nth-child(1) > div > a')
-        word.click()
+    def _get_definition(self,word,url):
+        word_element = self.driver.find_element(By.CSS_SELECTOR,'#searchPage_entry > div > div:nth-child(1) > div > a')
+        word_element.click()
         definition = self.driver.find_element(By.CSS_SELECTOR,'#content > div.section.section_entry._section_entry > div > div.entry_mean > div')
-        self.note_data['definition'].append(definition.text)
+        if definition :
+            defi = definition.text
+        else:
+            defi = ''
+
+        self.note_data[word]['definition'] = defi
 
 
 if __name__=='__main__':
     anki = Anki(csv_path='words.csv',model_name='Spanish Terms', deck_name='Spanish Vocabulary')
     anki.begin()
-    anki.write_to_apkg()
+    anki.write_to_apkg(file_name='res')
 
 
